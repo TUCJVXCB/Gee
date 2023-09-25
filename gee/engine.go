@@ -6,42 +6,45 @@ import (
 	"strconv"
 )
 
+type HandlerFunc func(*Context)
+
 type Engine struct {
 	port   int
-	routes map[string]http.HandlerFunc
+	router *router
 }
 
 func NewEngine(port int) *Engine {
-	return &Engine{port: port, routes: make(map[string]http.HandlerFunc)}
+	return &Engine{port: port, router: NewRouter()}
 }
 
-func (e *Engine) AddRoutes(method string, url string, f http.HandlerFunc) {
-	s := method + "-" + url
-	e.routes[s] = f
+func (e *Engine) GET(url string, f HandlerFunc) {
+	e.router.addRoute("GET", url, f)
 }
 
-func (e *Engine) AddGetRoutes(url string, f http.HandlerFunc) {
-	e.AddRoutes("GET", url, f)
+func (e *Engine) POST(url string, f HandlerFunc) {
+	e.router.addRoute("POST", url, f)
 }
 
-func (e *Engine) AddPostRoutes(url string, f http.HandlerFunc) {
-	e.AddRoutes("POST", url, f)
+func (e *Engine) DELETE(url string, f HandlerFunc) {
+	e.router.addRoute("DELETE", url, f)
 }
 
-func (e *Engine) AddDeleteRoutes(url string, f http.HandlerFunc) {
-	e.AddRoutes("DELETE", url, f)
-}
-
-func (e *Engine) AddPutRoutes(url string, f http.HandlerFunc) {
-	e.AddRoutes("PUT", url, f)
+func (e *Engine) PUT(url string, f HandlerFunc) {
+	e.router.addRoute("PUT", url, f)
 }
 
 func (e *Engine) Serve() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		key := r.Method + "-" + r.URL.Path
-		if f, ok := e.routes[key]; ok {
-			f(w, r)
+		if f, ok := e.router.handlers[key]; ok {
+			c := &Context{
+				Writer: w,
+				Req:    r,
+				Path:   r.URL.Path,
+				Method: r.Method,
+			}
+			f(c)
 			return
 		} else {
 			fmt.Fprint(w, "404 NOT FOUND!")
