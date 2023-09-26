@@ -14,7 +14,7 @@ type Engine struct {
 }
 
 func NewEngine(port int) *Engine {
-	return &Engine{port: port, router: NewRouter()}
+	return &Engine{port: port, router: newRouter()}
 }
 
 func (e *Engine) GET(url string, f HandlerFunc) {
